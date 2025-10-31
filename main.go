@@ -1,7 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"dep/clinput"
+)
 
 func main() {
-	fmt.Print("Running")
+	em_string := clinput.Clean_Input("lol")
+	fmt.Print(em_string)
 }
