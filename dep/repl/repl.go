@@ -1,0 +1,139 @@
+package repl
+
+import (
+	"os"
+	"net/http"
+	"encoding/json"
+)
+
+type cfg struct {
+	next 	 string
+	previous string
+}
+
+type cli_command struct {
+	name	    string
+	description string
+	callback    func(*cfg) error
+}
+
+type map_obj struct {
+	Name string `json:"name"`
+	Url  string `json:"url"`
+}
+
+type map_struct struct {
+	Count    int       `json:"count"`
+	Next     *string   `json:"next"`
+	Previous *string   `json:"previous"`
+	Results  []map_obj `json:"results"`
+}
+
+func Get_cmds() map[string]cli_command {
+	return map[string]cli_command{
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    command_exit,
+		},
+		"help": {
+			name:        "help",
+			description: "Displays a help message",
+			callback:    command_help,
+		},
+		"map": {
+			name:        "map",
+			description: "Shows next page available locations",
+			callback:    command_map,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Shows previous page of available locations",
+			callback:    command_mapb,
+		},
+	}
+
+}
+
+func command_exit(c *cfg) error {
+	fmt.Println("Closing the Pokedex... Goodbye!")
+	os.Exit(0)
+	return fmt.Errorf("Failed to exit")
+}
+
+func command_help(c *cfg) error {
+	fmt.Println("Welcome to the Pokedex!\nUsage:\n")
+
+	for _, v := range Get_cmds() {
+		fmt.Printf("%s: %s\n", v.name, v.description)
+	}
+
+	return nil
+}
+
+func map_sub(reverse bool, c *cfg) error {
+	var sub_url string
+
+	if reverse {
+		if c.previous == "" {
+			return fmt.Errorf("You are already on the first page")
+		} else {
+			sub_url = c.previous
+		}
+	} else {
+		if c.next != "" {
+			sub_url = c.next
+		} else {
+			sub_url = "https://pokeapi.co/api/v2/location-area"
+		}
+	}
+
+	req, err := http.Get(sub_url)
+	if err != nil {
+		return err
+	}
+
+	if req.StatusCode > 299 {
+		return fmt.Errorf("Request failed, status code: %d", req.StatusCode)
+	}
+
+	defer req.Body.Close()
+
+	var ms map_struct
+	decoder := json.NewDecoder(req.Body)
+	if err := decoder.Decode(&ms); err != nil {
+		return err
+	}
+
+	if ms.Next != nil {
+		c.next = *ms.Next
+	}
+	
+	if ms.Previous != nil {
+		c.previous = *ms.Previous
+	} else {
+		c.previous = ""
+	}
+
+	for _, v := range ms.Results {
+		fmt.Println(v.Name)
+	}
+
+	return nil
+}
+
+func command_map(c *cfg) error {
+	if err := map_sub(false, c); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func command_mapb(c *cfg) error {
+	if err := map_sub(true, c); err != nil {
+		return err
+	}
+
+	return nil
+}

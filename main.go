@@ -1,52 +1,17 @@
 package main
 
-import (
+import ( 
 	"os"
 	"fmt"
 	"bufio"
+	"dep/repl"
 	"dep/clinput"
 )
 
-type cli_command struct {
-	name	    string
-	description string
-	callback    func() error
-}
-
-func get_cmds() map[string]cli_command {
-	return map[string]cli_command{
-		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    command_exit,
-		},
-		"help": {
-			name:        "help",
-			description: "Displays a help message",
-			callback:    command_help,
-		},
-	}
-
-}
-
-func command_exit() error {
-	fmt.Println("Closing the Pokedex... Goodbye!")
-	os.Exit(0)
-	return fmt.Errorf("Failed to exit")
-}
-
-func command_help() error {
-	fmt.Println("Welcome to the Pokedex!\nUsage:\n")
-
-	for _, v := range get_cmds() {
-		fmt.Printf("%s: %s\n", v.name, v.description)
-	}
-
-	return nil
-}
-
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
+
+	config := &repl.Cfg{}
 
 	for {
 		fmt.Print("Pokedex > ")
@@ -65,14 +30,14 @@ func main() {
 			continue
 		}
 
-		e, ok := get_cmds()[inp[0]]
+		e, ok := repl.Get_cmds()[inp[0]]
 		if !ok {
 			fmt.Println("Unknown command")
 
 			continue
 		}
 
-		if err := e.callback(); err != nil {
+		if err := e.Callback(config); err != nil {
 			fmt.Println(err)
 		}
 	}
