@@ -1,8 +1,0 @@
-# dep/clinput v0.0.0-00010101000000-000000000000 => ./dep/clinput
-## explicit; go 1.25.3
-dep/clinput
-# dep/repl v0.0.0-00010101000000-000000000000 => ./dep/repl
-## explicit; go 1.25.3
-dep/repl
-# dep/clinput => ./dep/clinput
-# dep/repl => ./dep/repl

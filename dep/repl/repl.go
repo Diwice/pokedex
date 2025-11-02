@@ -2,11 +2,12 @@ package repl
 
 import (
 	"os"
+	"fmt"
 	"net/http"
 	"encoding/json"
 )
 
-type cfg struct {
+type Cfg struct {
 	next 	 string
 	previous string
 }
@@ -14,7 +15,7 @@ type cfg struct {
 type cli_command struct {
 	name	    string
 	description string
-	callback    func(*cfg) error
+	Callback    func(*Cfg) error
 }
 
 type map_obj struct {
@@ -34,34 +35,34 @@ func Get_cmds() map[string]cli_command {
 		"exit": {
 			name:        "exit",
 			description: "Exit the Pokedex",
-			callback:    command_exit,
+			Callback:    command_exit,
 		},
 		"help": {
 			name:        "help",
 			description: "Displays a help message",
-			callback:    command_help,
+			Callback:    command_help,
 		},
 		"map": {
 			name:        "map",
 			description: "Shows next page available locations",
-			callback:    command_map,
+			Callback:    command_map,
 		},
 		"mapb": {
 			name:        "mapb",
 			description: "Shows previous page of available locations",
-			callback:    command_mapb,
+			Callback:    command_mapb,
 		},
 	}
 
 }
 
-func command_exit(c *cfg) error {
+func command_exit(c *Cfg) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return fmt.Errorf("Failed to exit")
 }
 
-func command_help(c *cfg) error {
+func command_help(c *Cfg) error {
 	fmt.Println("Welcome to the Pokedex!\nUsage:\n")
 
 	for _, v := range Get_cmds() {
@@ -71,7 +72,7 @@ func command_help(c *cfg) error {
 	return nil
 }
 
-func map_sub(reverse bool, c *cfg) error {
+func map_sub(reverse bool, c *Cfg) error {
 	var sub_url string
 
 	if reverse {
@@ -122,7 +123,7 @@ func map_sub(reverse bool, c *cfg) error {
 	return nil
 }
 
-func command_map(c *cfg) error {
+func command_map(c *Cfg) error {
 	if err := map_sub(false, c); err != nil {
 		return err
 	}
@@ -130,7 +131,7 @@ func command_map(c *cfg) error {
 	return nil
 }
 
-func command_mapb(c *cfg) error {
+func command_mapb(c *Cfg) error {
 	if err := map_sub(true, c); err != nil {
 		return err
 	}
