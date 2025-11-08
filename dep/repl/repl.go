@@ -4,12 +4,14 @@ import (
 	"os"
 	"fmt"
 	"net/http"
+	"dep/cache"
 	"encoding/json"
 )
 
 type Cfg struct {
 	next 	 string
 	previous string
+	Ch       *cache.Cache
 }
 
 type cli_command struct {
@@ -74,7 +76,6 @@ func command_help(c *Cfg) error {
 
 func map_sub(reverse bool, c *Cfg) error {
 	var sub_url string
-
 	if reverse {
 		if c.previous == "" {
 			return fmt.Errorf("You are already on the first page")
@@ -87,6 +88,48 @@ func map_sub(reverse bool, c *Cfg) error {
 		} else {
 			sub_url = "https://pokeapi.co/api/v2/location-area"
 		}
+	}
+
+	entry, ok := c.Ch.Get(sub_url)
+	if ok {
+		if reverse { // Don't blame me for these checks. Couldn't find a better fix not rewriting half of the whole package.
+			if len(c.previous) > 0 {
+				num_slice := c.previous[len(c.previous)-11:len(c.previous)-9]
+				if num_slice == "=0" {
+					c.previous = ""
+				} else {
+					num_re := 0
+					for _, v := range num_slice {
+						num_re = num_re*10 + int(v - '0')
+					}
+					num_re -= 20
+
+					c.previous = fmt.Sprintf("https://pokeapi.co/api/v2/location-area?offset=%d&limit=20", num_re)
+				}
+			}
+
+			c.next = sub_url
+		} else {
+			c.previous = sub_url
+
+			num_slice := c.next[len(c.next)-11:len(c.next)-9]
+			
+			if num_slice != "=0" {
+				num_re := 0
+				for _, v := range num_slice {
+					num_re = num_re*10 + int(v - '0')
+				}
+				num_re += 20
+				
+				c.next = fmt.Sprintf("https://pokeapi.co/api/v2/location-area?offset=%d&limit=20", num_re)
+			} else {
+				c.next = "https://pokeapi.co/api/v2/location-area?offset=20&limit=20"
+			}
+		}
+
+		fmt.Print(string(entry))
+
+		return nil
 	}
 
 	req, err := http.Get(sub_url)
@@ -116,9 +159,14 @@ func map_sub(reverse bool, c *Cfg) error {
 		c.previous = ""
 	}
 
+	res := ""
 	for _, v := range ms.Results {
-		fmt.Println(v.Name)
+		res += v.Name+"\n"
 	}
+
+	fmt.Print(res)
+
+	c.Ch.Add(sub_url, []byte(res))
 
 	return nil
 }

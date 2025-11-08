@@ -3,15 +3,20 @@ package main
 import ( 
 	"os"
 	"fmt"
+	"time"
 	"bufio"
 	"dep/repl"
+	"dep/cache"
 	"dep/clinput"
 )
 
 func main() {
+	const interval = time.Second * 60
+
 	scanner := bufio.NewScanner(os.Stdin)
 
-	config := &repl.Cfg{}
+	new_cache := cache.New_Cache(interval)
+	config := &repl.Cfg{Ch: &new_cache}
 
 	for {
 		fmt.Print("Pokedex > ")
