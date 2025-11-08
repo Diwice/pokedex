@@ -17,7 +17,7 @@ type Cfg struct {
 type cli_command struct {
 	name	    string
 	description string
-	Callback    func(*Cfg) error
+	Callback    func(*Cfg, string) error
 }
 
 type map_obj struct {
@@ -30,6 +30,18 @@ type map_struct struct {
 	Next     *string   `json:"next"`
 	Previous *string   `json:"previous"`
 	Results  []map_obj `json:"results"`
+}
+
+type pokemon struct {
+	Name string `json:"name"`
+}
+
+type poke_encounter struct {
+	Pokemon pokemon `json:"pokemon"`
+}
+
+type enc_res struct {
+	Encounters []poke_encounter `json:"pokemon_encounters"`
 }
 
 func Get_cmds() map[string]cli_command {
@@ -54,17 +66,22 @@ func Get_cmds() map[string]cli_command {
 			description: "Shows previous page of available locations",
 			Callback:    command_mapb,
 		},
+		"explore": {
+			name:        "explore",
+			description: "Shows the Pokemons inhabiting the named area",
+			Callback:    command_explore,
+		},
 	}
 
 }
 
-func command_exit(c *Cfg) error {
+func command_exit(c *Cfg, params string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return fmt.Errorf("Failed to exit")
 }
 
-func command_help(c *Cfg) error {
+func command_help(c *Cfg, params string) error {
 	fmt.Println("Welcome to the Pokedex!\nUsage:\n")
 
 	for _, v := range Get_cmds() {
@@ -171,7 +188,7 @@ func map_sub(reverse bool, c *Cfg) error {
 	return nil
 }
 
-func command_map(c *Cfg) error {
+func command_map(c *Cfg, params string) error {
 	if err := map_sub(false, c); err != nil {
 		return err
 	}
@@ -179,10 +196,54 @@ func command_map(c *Cfg) error {
 	return nil
 }
 
-func command_mapb(c *Cfg) error {
+func command_mapb(c *Cfg, params string) error {
 	if err := map_sub(true, c); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func command_explore(c *Cfg, params string) error {
+	fmt.Printf("Exploring %s...\n", params)
+
+	sub_url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s", params)
+
+	entry, ok := c.Ch.Get(sub_url)
+	if ok {
+		fmt.Print(string(entry))
+
+		return nil
+	}
+
+	req, err := http.Get(sub_url)
+	if err != nil {
+		return err
+	}
+
+	if req.StatusCode == 404 {
+		c.Ch.Add(sub_url, []byte("Location does not exist!\n"))
+		return fmt.Errorf("Location does not exist!")
+	} else if req.StatusCode > 299 {
+		return fmt.Errorf("Request failed, status code: %d", req.StatusCode)
+	}
+
+	defer req.Body.Close()
+
+	var poke_encs enc_res
+	decoder := json.NewDecoder(req.Body)
+	if err := decoder.Decode(&poke_encs); err != nil {
+		return err
+	}
+
+	res := ""
+	for _, enc := range poke_encs.Encounters {
+		res += fmt.Sprintf(" - %s\n", enc.Pokemon.Name)
+	}
+
+	fmt.Print(res)
+
+	c.Ch.Add(sub_url, []byte(res))
 
 	return nil
 }

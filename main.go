@@ -42,7 +42,14 @@ func main() {
 			continue
 		}
 
-		if err := e.Callback(config); err != nil {
+		var a_inp string
+		if len(inp) > 1 {
+			a_inp = inp[1]
+		} else {
+			a_inp = ""
+		}
+
+		if err := e.Callback(config, a_inp); err != nil {
 			fmt.Println(err)
 		}
 	}
