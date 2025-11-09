@@ -106,6 +106,11 @@ func Get_cmds() map[string]cli_command {
 			description: "Check the characteristics of named Pokemon. inspect <pokemon-name>",
 			Callback:    command_inspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Display all the caught Pokemons.",
+			Callback:    command_pokedex,
+		},
 	}
 
 }
@@ -344,6 +349,19 @@ func command_inspect(c *Cfg, params string) error {
 	fmt.Println("Types:")
 	for _, v := range p.Types {
 		fmt.Printf("  - %s\n", v.Type.Name)
+	}
+
+	return nil
+}
+
+func command_pokedex(c *Cfg, params string) error {
+	if c.pokedex == nil {
+		return fmt.Errorf("You haven't caught any Pokemon yet!")
+	}
+
+	fmt.Println("Your Pokedex:")
+	for i, _ := range c.pokedex {
+		fmt.Printf(" - %s\n", i)
 	}
 
 	return nil
