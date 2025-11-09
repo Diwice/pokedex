@@ -35,9 +35,30 @@ type map_struct struct {
 	Results  []map_obj `json:"results"`
 }
 
+type stat struct {
+	Name string `json:"name"`
+}
+
+type poke_stat struct {
+	Base_stat int  `json:"base_stat"`
+	Stat      stat `json:"stat"`
+}
+
+type sub_type struct {
+	Name string `json:"name"`
+}
+
+type poke_type struct {
+	Type sub_type `json:"type"`
+}
+
 type pokemon struct {
-	Name     string `json:"name"`
-	Base_exp int    `json:"base_experience"`
+	Name     string      `json:"name"`
+	Base_exp int         `json:"base_experience"`
+	Height   int 	     `json:"height"`
+	Weight   int         `json:"weight"`
+	Stats    []poke_stat `json:"stats"`
+	Types    []poke_type `json:"types"`
 }
 
 type poke_encounter struct {
@@ -79,6 +100,11 @@ func Get_cmds() map[string]cli_command {
 			name:        "catch",
 			description: "Attempt to catch a named pokemon. catch <pokemon-name>",
 			Callback:    command_catch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "Check the characteristics of named Pokemon. inspect <pokemon-name>",
+			Callback:    command_inspect,
 		},
 	}
 
@@ -298,6 +324,27 @@ func command_catch(c *Cfg, params string) error {
 	}
 
 	fmt.Printf("%s escaped!\n", params)
+
+	return nil
+}
+
+func command_inspect(c *Cfg, params string) error {
+	p, caught := c.pokedex[params]
+	if !caught {
+		return fmt.Errorf("You have not caught this Pokemon!")
+	}
+
+	fmt.Printf("Name: %s\nHeight: %d\nWeight: %d\n", p.Name, p.Height, p.Weight)
+
+	fmt.Println("Stats:")
+	for _, v := range p.Stats {
+		fmt.Printf("  -%s: %d\n", v.Stat.Name, v.Base_stat)
+	}
+
+	fmt.Println("Types:")
+	for _, v := range p.Types {
+		fmt.Printf("  - %s\n", v.Type.Name)
+	}
 
 	return nil
 }
